@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for the message box */
+        #message-box {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f0fdf4;
+            color: #15803d;
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid #16a34a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        #message-box.show {
+            display: block;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'roboto': ['Roboto', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-gray-100 font-roboto">
+    <div class="container mx-auto p-6 sm:p-10 md:p-12 lg:p-16">
+        <h1 class="text-2xl font-semibold text-blue-600 text-center mb-8">Order Management System</h1>
+
+        <div id="message-box" class="hidden"></div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Order / Return</h2>
+            <form id="order-return-form" class="space-y-4">
+                <div>
+                    <label for="customer-name" class="block text-gray-700 text-sm font-bold mb-2">Customer Name:</label>
+                    <input type="text" id="customer-name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                    <div id="customer-name-error" class="text-red-500 text-xs italic" style="display: none;"></div>
+                </div>
+                <div id="product-container">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Products:</label>
+                    <div class="flex space-x-4 mb-2 product-row">
+                        <select name="product-name[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline product-select" required>
+                            <option value="" disabled selected>Select Product</option>
+                        </select>
+                        <input type="number" name="quantity[]" class="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value="1" min="1" required>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline add-product-button">Add Product</button>
+                    </div>
+                </div>
+                <div id="product-error" class="text-red-500 text-xs italic" style="display: none;"></div>
+                <div>
+                    <label for="comments" class="block text-gray-700 text-sm font-bold mb-2">Comments:</label>
+                    <textarea id="comments" name="comments" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                </div>
+                <div>
+                    <label for="repurchase-flag" class="block text-gray-700 text-sm font-bold mb-2">Repurchase Flag:</label>
+                    <select id="repurchase-flag" name="repurchase-flag" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                        <option value="" disabled selected>Select Repurchase Flag</option>
+                    </select>
+                    <div id="repurchase-flag-error" class="text-red-500 text-xs italic" style="display: none;"></div>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="is-return" class="mr-2 h-5 w-5 text-red-600 form-checkbox rounded">
+                    <label for="is-return" class="text-gray-700 text-sm font-bold">Return Order</label>
+                </div>
+                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Add Order / Process Return</button>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Order History</h2>
+            <ul id="order-history" class="space-y-3">
+                </ul>
+        </div>
+    </div>
+
+    <script>
+        // --- Helper Functions ---
+
+        /**
+         * Displays a message to the user.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of message ('success' or 'error').
+         */
+        function showMessage(message, type = 'success') {
+            const messageBox = document.getElementById('message-box');
+            messageBox.textContent = message;
+            messageBox.className = `fixed top-4 left-1/2 transform -translate-x-1/2 bg-${type === 'success' ? 'green' : 'red'}-100 text-${type === 'success' ? 'green' : 'red'}-700 border border-${type === 'success' ? 'green' : 'red'}-400 px-4 py-2 rounded shadow-md`;
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        /**
+         * Validates the form inputs.
+         * @returns {boolean} - True if the form is valid, false otherwise.
+         */
+        function validateForm() {
+            let isValid = true;
+            const customerName = document.getElementById('customer-name').value.trim();
+            const productNames = document.getElementsByName('product-name[]');
+            const quantities = document.getElementsByName('quantity[]');
+            const repurchaseFlag = document.getElementById('repurchase-flag').value.trim();
+
+            const customerNameError = document.getElementById('customer-name-error');
+            const productError = document.getElementById('product-error');
+            const repurchaseFlagError = document.getElementById('repurchase-flag-error');
+
+
+            if (!customerName) {
+                customerNameError.textContent = 'Customer name is required';
+                customerNameError.style.display = 'block';
+                isValid = false;
+            } else {
+                customerNameError.style.display = 'none';
+            }
+
+            let hasProducts = false;
+            for (let i = 0; i < productNames.length; i++) {
+                if (productNames[i].value.trim() && quantities[i].value.trim() && parseInt(quantities[i].value) > 0) {
+                    hasProducts = true;
+                    break;
+                }
+            }
+            if (!hasProducts) {
+                productError.textContent = 'At least one product with quantity is required';
+                productError.style.display = 'block';
+                isValid = false;
+            } else {
+                productError.style.display = 'none';
+            }
+
+            for (let i = 0; i < productNames.length; i++) {
+                if (productNames[i].value.trim() && (!quantities[i].value.trim() || isNaN(quantities[i].value) || parseInt(quantities[i].value) <= 0)) {
+                    isValid = false;
+                    break;
+                }
+                if (quantities[i].value.trim() && (!productNames[i].value.trim())) {
+                    isValid = false;
+                    break;
+                }
+            }
+            if (!repurchaseFlag) {
+                repurchaseFlagError.textContent = 'Repurchase Flag is required';
+                repurchaseFlagError.style.display = 'block';
+                isValid = false;
+            } else {
+                repurchaseFlagError.style.display = 'none';
+            }
+            return isValid;
+        }
+
+        // --- Google Drive API Integration ---
+
+        // Replace with your Google Drive API credentials and file ID
+        const CLIENT_ID = 'http://565800360570-dks733ovj3d3rn2lckgbhu6sbq4ftjti.apps.googleusercontent.com'; // Replace with your Client ID
+        const API_KEY = 'AIzaSyAgVZW_aiWj_jMk_e_bnUYMFzh59udqT-s'; // Replace with your API Key
+        const SPREADSHEET_ID = '1Op4NBuVU67UI7gv5_nypva2dEUbiMYjY6HuVlXOHxNk'; // Replace with your Spreadsheet ID
+        const DISCOVERY_DOC = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
+        const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+
+        let googleApiClientReady = false;
+        let productList = []; // To store the product list
+        let repurchaseOptions = []; // To store repurchase flag options;
+
+        /**
+         * Initializes the Google API client.
+         */
+        function initClient() {
+            gapi.load('client', () => {
+                gapi.client.init({
+                    apiKey: API_KEY,
+                    clientId: CLIENT_ID,
+                    discoveryDocs: DISCOVERY_DOC,
+                    scope: SCOPES,
+                }).then(() => {
+                    googleApiClientReady = true;
+                    loadProducts(); // Load products first.  This is CRITICAL.
+                }).catch(error => {
+                    console.error('Error initializing gapi client:', error);
+                    showMessage('Error initializing Google API client. Check console for details.', 'error');
+                });
+            });
+        }
+
+        // Load the Google API client library
+        window.onload = () => {
+            const script = document.createElement('script');
+            script.src = 'https://apis.google.com/js/api.js';
+            script.async = true;
+            script.defer = true;
+            document.body.appendChild(script);
+            script.onload = () => {
+                initClient(); // Call initClient when the script loads
+            };
+        };
+
+        /**
+         * Loads products from the Google Sheet.
+         */
+        function loadProducts() {
+            if (!googleApiClientReady) {
+                console.warn('Google API client not ready yet.');
+                return;
+            }
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'Products!A2:A',
+            }).then(response => {
+                const values = response.result.values;
+                productList = [];
+                if (values && values.length > 0) {
+                    values.forEach(row => {
+                        productList.push(row[0]);
+                    });
+                    populateProductDropdowns(); // Populate dropdowns *after* loading
+                    loadRepurchaseOptions();
+                } else {
+                    showMessage('No products found in the product list.', 'error');
+                    populateProductDropdowns();  // populate even if no products
+                    loadRepurchaseOptions();
+                }
+            }).catch(error => {
+                console.error('Error loading products:', error);
+                showMessage('Error loading products. Check console for details.', 'error');
+            });
+        }
+
+        /**
+         * Loads repurchase options from the Google Sheet.
+         */
+        function loadRepurchaseOptions() {
+            if (!googleApiClientReady) {
+                console.warn('Google API client not ready yet.');
+                return;
+            }
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'RepurchaseOptions!A2:A',
+            }).then(response => {
+                const values = response.result.values;
+                repurchaseOptions = [];
+                if (values && values.length > 0) {
+                    values.forEach(row => {
+                        repurchaseOptions.push(row[0]);
+                    });
+                    populateRepurchaseDropdown(); // Populate *after* loading
+                    loadOrderHistory();
+                } else {
+                    showMessage('No repurchase options found.', 'error');
+                    populateRepurchaseDropdown();
+                    loadOrderHistory();
+                }
+            }).catch(error => {
+                console.error('Error loading repurchase options:', error);
+                showMessage('Error loading repurchase options. Check console for details.', 'error');
+            });
+        }
+
+        /**
+         * Populates the product dropdown menus with the loaded product list.
+         */
+        function populateProductDropdowns() {
+            const productSelects = document.querySelectorAll('.product-select');
+            productSelects.forEach(select => {
+                select.innerHTML = '<option value="" disabled selected>Select Product</option>';
+                productList.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product;
+                    option.textContent = product;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        /**
+         * Populates the repurchase dropdown with options from Google Sheets.
+         */
+        function populateRepurchaseDropdown() {
+            const repurchaseSelect = document.getElementById('repurchase-flag');
+            repurchaseSelect.innerHTML = '<option value="" disabled selected>Select Repurchase Flag</option>';
+            repurchaseOptions.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                repurchaseSelect.appendChild(optionElement);
+            });
+        }
+
+        /**
+         * Loads order history from the Google Sheet.
+         */
+        function loadOrderHistory() {
+            if (!googleApiClientReady) {
+                console.warn('Google API client not ready yet.');
+                return;
+            }
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'Orders!A2:G',
+            }).then(response => {
+                const values = response.result.values;
+                const orderHistoryList = document.getElementById('order-history');
+                orderHistoryList.innerHTML = '';
+
+                if (values && values.length > 0) {
+                    values.forEach(row => {
+                        const orderId = row[0];
+                        const customerName = row[1];
+                        const products = JSON.parse(row[2]);
+                        const comments = row[3];
+                        const repurchaseFlag = row[4];
+                        let productsDisplay = '';
+                        products.forEach(product => {
+                            productsDisplay += `${product.name} (${product.quantity}), `;
+                        });
+                        productsDisplay = productsDisplay.slice(0, -2);
+                        const listItem = document.createElement('li');
+                        listItem.className = "bg-white border border-gray-200 rounded-md shadow-sm py-2 px-4";
+                        listItem.textContent = `Order ID: ${orderId}, Customer: ${customerName}, Products: ${productsDisplay}, Comments: ${comments}, Repurchase: ${repurchaseFlag}`;
+                        orderHistoryList.appendChild(listItem);
+                    });
+                } else {
+                    orderHistoryList.innerHTML = '<li class="text-gray-500">No orders found.</li>';
+                }
+            }).catch(error => {
+                console.error('Error loading order history:', error);
+                showMessage('Error loading order history. Check console for details.', 'error');
+            });
+        }
+
+        /**
+         * Adds a new order or processes a return based on the form data.
+         * @param {Event} event - The form submit event.
+         */
+        function addOrderOrReturn(event) {
+            event.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            const customerName = document.getElementById('customer-name').value;
+            const productNames = document.getElementsByName('product-name[]');
+            const quantities = document.getElementsByName('quantity[]');
+            const isReturn = document.getElementById('is-return').checked;
+            const products = [];
+            const comments = document.getElementById('comments').value;
+            const repurchaseFlag = document.getElementById('repurchase-flag').value;
+
+
+            for (let i = 0; i < productNames.length; i++) {
+                if (productNames[i].value.trim() && quantities[i].value.trim() && parseInt(quantities[i].value) > 0) {
+                    products.push({ name: productNames[i].value.trim(), quantity: parseInt(quantities[i].value) });
+                }
+            }
+            const orderId = generateOrderId();
+            const totalQuantity = calculateTotalQuantity(products);
+            const orderDate = new Date().toISOString();
+
+            if (!googleApiClientReady) {
+                console.warn('Google API client not ready yet.');
+                showMessage('Google API client is not ready. Please try again later.', 'error');
+                return;
+            }
+            const values = isReturn
+                ? [[orderId, 'Return', JSON.stringify(products), -totalQuantity, orderDate, comments, repurchaseFlag]]
+                : [[orderId, customerName, JSON.stringify(products), totalQuantity, orderDate, comments, repurchaseFlag]];
+
+            gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: SPREADSHEET_ID,
+                range: 'Orders!A2:G',
+                valueInputOption: 'RAW',
+                insertDataOption: 'INSERT_ROWS',
+                resource: {
+                    values: values,
+                },
+            }).then(response => {
+                console.log(isReturn ? 'Return processed:' : 'Order added:', response);
+                showMessage(isReturn ? 'Return processed successfully!' : 'Order added successfully!');
+                document.getElementById('order-return-form').reset();
+                loadOrderHistory();
+            }).catch(error => {
+                console.error(isReturn ? 'Error processing return:' : 'Error adding order:', error);
+                showMessage(isReturn ? 'Error processing return. Check console for details.' : 'Error adding order. Check console for details.', 'error');
+            });
+        }
+
+        /**
+         * Generates a unique Order ID.
+         * @returns {string} - A unique order ID.
+         */
+        function generateOrderId() {
+            return Math.random().toString(36).substring(2, 9).toUpperCase();
+        }
+
+        /**
+         * Calculates the total quantity of products in an order
+         * @param {Array} products - Array of products with name and quantity
+         * @returns {number} - Total quantity
+         */
+        function calculateTotalQuantity(products) {
+            let total = 0;
+            products.forEach(product => {
+                total += product.quantity;
+            });
+            return total;
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('order-return-form').addEventListener('submit', addOrderOrReturn);
+
+        // --- Add Product Button ---
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('add-product-button')) {
+                const productContainer = document.getElementById('product-container');
+                const newProductRow = document.createElement('div');
+                newProductRow.className = 'flex space-x-4 mb-2 product-row';
+                newProductRow.innerHTML = `
+                    <select name="product-name[]" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline product-select" required>
+                        <option value="" disabled selected>Select Product</option>
+                    </select>
+                    <input type="number" name="quantity[]" class="shadow appearance-none border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value="1" min="1" required>
+                    <button type="button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline remove-product-button">Remove</button>
+                `;
+                const productSelect = newProductRow.querySelector('.product-select');
+                productList.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product;
+                    option.textContent = product;
+                    productSelect.appendChild(option);
+                });
+                productContainer.appendChild(newProductRow);
+            }
+            if (event.target.classList.contains('remove-product-button')) {
+                event.target.parentNode.remove();
+            }
+        });
+    </script>
+</body>
+</html>
