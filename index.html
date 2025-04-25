@@ -3,93 +3,164 @@
 <head>
     <title>Order Details Form</title>
     <style>
+        :root {
+            --primary-color: #4CAF50;
+            --light-gray: #f9f9f9;
+            --border-color: #ddd;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
         }
+
         form {
-            margin-top: 20px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            width: 800px; /* Adjust width as needed */
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
         }
-        label { /* Keep label style for Customer Name */
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
             display: block;
-            margin-bottom: 5px;
+            color: #555;
         }
+
         input[type="text"], input[type="number"], select, textarea {
-            width: 100%; /* Inputs take full width of table cell */
-            padding: 8px;
-            margin-bottom: 5px; /* Reduced margin for table layout */
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            box-sizing: border-box; /* Important for width calculation */
+            width: 100%;
+            padding: 10px;
+            margin-top: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
         }
+
         textarea {
             resize: vertical;
         }
+
+        #productsContainer {
+            margin-top: 25px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px; /* Space before submit button */
+            margin-top: 10px;
+            background-color: white;
         }
+
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid var(--border-color);
+            padding: 10px;
             text-align: left;
-            vertical-align: top; /* Align content to the top of the cell */
+            vertical-align: top;
         }
+
         th {
-            background-color: #f2f2f2;
-            font-weight: bold;
+            background-color: var(--light-gray);
+            font-weight: 600;
+            color: #444;
         }
-        /* Adjust column widths if needed */
-        th:nth-child(1), td:nth-child(1) { width: 30%; font-weight: bold; } /* Product Name (display) */
-        th:nth-child(2), td:nth-child(2) { width: 10%; } /* Amount */
-        th:nth-child(3), td:nth-child(3) { width: 10%; } /* Quantity */
-        th:nth-child(4), td:nth-child(4) { width: 15%; } /* Repurchase Flag */
-        th:nth-child(5), td:nth-child(5) { width: 35%; } /* Comment */
+
+        tr:nth-child(even) td {
+            background-color: #fafafa;
+        }
 
         button {
-            background-color: #4CAF50;
+            background-color: var(--primary-color);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 3px;
+            border-radius: 5px;
+            font-size: 15px;
             cursor: pointer;
             margin-right: 10px;
+            transition: background-color 0.3s;
         }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
         #message {
-            margin-top: 10px;
+            margin-top: 15px;
             font-weight: bold;
+            color: #333;
         }
-        /* Style for rows where amount is entered (optional) */
-        /* tr.has-amount { background-color: #e8f5e9; } */
+
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            thead tr {
+                display: none;
+            }
+
+            tr {
+                margin-bottom: 15px;
+            }
+
+            td {
+                padding: 10px;
+                border: none;
+                position: relative;
+            }
+
+            td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                display: block;
+                margin-bottom: 6px;
+                color: #666;
+            }
+
+            td input, td select, td textarea {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>Enter Order Details</h1>
     <form id="orderForm">
+        <h1>Enter Order Details</h1>
+
         <div>
             <label for="customerName">Customer Name:</label>
-            <input type="text" id="customerName" name="customerName">
+            <input type="text" id="customerName" name="customerName" placeholder="Enter customer name...">
         </div>
 
         <div id="productsContainer">
-             <table id="productTable">
-                 <thead>
-                     <tr>
-                         <th>Product Name</th>
-                         <th>Amount</th>
-                         <th>Quantity</th>
-                         <th>Repurchase Flag</th>
-                         <th>Comment</th>
-                     </tr>
-                 </thead>
-                 <tbody id="productTableBody">
-                     <tr><td colspan="5">Loading products...</td></tr>
-                 </tbody>
-             </table>
+            <table id="productTable">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Amount</th>
+                        <th>Quantity</th>
+                        <th>Repurchase Flag</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody">
+                    <tr><td colspan="5">Loading products...</td></tr>
+                </tbody>
+            </table>
         </div>
 
         <button type="submit">Submit Order</button>
@@ -97,65 +168,55 @@
     </form>
 
     <script>
-        const webAppUrl = "https://script.google.com/macros/s/AKfycbxa9ebjfUvBOEhCzFf91RAuIDG1Wg-umnu0qNKcbLoW20K4Kp_8kqRoJMaP1fRrh784/exec"; // Replace with your actual Web App URL
+        const webAppUrl = "https://script.google.com/macros/s/AKfycbxa9ebjfUvBOEhCzFf91RAuIDG1Wg-umnu0qNKcbLoW20K4Kp_8kqRoJMaP1fRrh784/exec";
 
         const form = document.getElementById('orderForm');
         const productTableBody = document.getElementById('productTableBody');
         const messageDiv = document.getElementById('message');
 
-        let repurchaseOptions = []; // Keep repurchase flags global if needed elsewhere
+        let repurchaseOptions = [];
 
-        // --- Function to generate the product table ---
         function populateProductTable(products, repurchaseFlags) {
-            productTableBody.innerHTML = ''; // Clear existing rows (like 'Loading...')
+            productTableBody.innerHTML = '';
 
             if (!products || products.length === 0) {
-                 productTableBody.innerHTML = '<tr><td colspan="5">No products found.</td></tr>';
-                 return;
+                productTableBody.innerHTML = '<tr><td colspan="5">No products found.</td></tr>';
+                return;
             }
 
             products.forEach(productName => {
                 const tr = document.createElement('tr');
-                // Store the product name in a data attribute for later retrieval
                 tr.dataset.productName = productName;
 
                 tr.innerHTML = `
-                    <td>${productName}</td> 
-                    <td>
-                        <input type="number" name="amount" step="0.01" min="0"> 
-                    </td>
-                    <td>
-                        <input type="number" name="quantity" step="1" min="0"> 
-                    </td>
-                    <td>
+                    <td data-label="Product Name">${productName}</td>
+                    <td data-label="Amount"><input type="number" name="amount" step="0.01" min="0"></td>
+                    <td data-label="Quantity"><input type="number" name="quantity" step="1" min="0"></td>
+                    <td data-label="Repurchase Flag">
                         <select name="repurchaseFlag">
                             <option value="">Select Option</option>
                             ${repurchaseFlags.map(flag => `<option value="${flag}">${flag}</option>`).join('')}
                         </select>
                     </td>
-                    <td>
-                        <textarea name="comment" rows="2" placeholder="Optional..."></textarea>
-                    </td>
+                    <td data-label="Comment"><textarea name="comment" rows="2" placeholder="Optional..."></textarea></td>
                 `;
                 productTableBody.appendChild(tr);
             });
         }
 
-        // --- Function to fetch initial data ---
         async function fetchInitialData() {
             messageDiv.textContent = "Loading options...";
             try {
-                const response = await fetch(`${webAppUrl}?action=getDropdownData`); // Assuming same endpoint provides products
+                const response = await fetch(`${webAppUrl}?action=getDropdownData`);
                 const data = await response.json();
 
                 if (!data.products || !data.repurchaseFlags) {
-                     throw new Error("Invalid data structure received from server.");
+                    throw new Error("Invalid data structure received.");
                 }
 
-                repurchaseOptions = data.repurchaseFlags; // Store repurchase flags
-                populateProductTable(data.products, data.repurchaseFlags); // Generate table rows
-                messageDiv.textContent = ""; // Clear loading message
-
+                repurchaseOptions = data.repurchaseFlags;
+                populateProductTable(data.products, repurchaseOptions);
+                messageDiv.textContent = "";
             } catch (error) {
                 console.error("Error fetching initial data:", error);
                 productTableBody.innerHTML = `<tr><td colspan="5">Error loading products: ${error.message}</td></tr>`;
@@ -163,101 +224,65 @@
             }
         }
 
-
-        // --- Function to clear input fields in the table ---
         function clearTableInputs() {
             const rows = productTableBody.querySelectorAll('tr');
             rows.forEach(row => {
-                const amountInput = row.querySelector('input[name="amount"]');
-                const quantityInput = row.querySelector('input[name="quantity"]');
-                const repurchaseSelect = row.querySelector('select[name="repurchaseFlag"]');
-                const commentTextarea = row.querySelector('textarea[name="comment"]');
-
-                if (amountInput) amountInput.value = '';
-                if (quantityInput) quantityInput.value = '';
-                if (repurchaseSelect) repurchaseSelect.value = ''; // Reset dropdown
-                if (commentTextarea) commentTextarea.value = '';
+                row.querySelectorAll('input, select, textarea').forEach(el => el.value = '');
             });
         }
 
-        // --- Form Submission Handler ---
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            messageDiv.textContent = ""; // Clear previous messages
+            messageDiv.textContent = "";
 
             const customerName = form.customerName.value || "Unknown Customer";
-            const productEntries = []; // Array to hold data for products with amount entered
+            const productEntries = [];
 
             const rows = productTableBody.querySelectorAll('tr');
 
             rows.forEach(row => {
-                const amountInput = row.querySelector('input[name="amount"]');
-                // Check if amountInput exists and has a value (and optionally is > 0)
-                if (amountInput && amountInput.value && parseFloat(amountInput.value) > 0) {
-                    // Retrieve product name from data attribute
-                    const productName = row.dataset.productName;
-
-                    // Retrieve other values from the row
-                    const quantity = row.querySelector('input[name="quantity"]').value;
-                    const repurchaseFlag = row.querySelector('select[name="repurchaseFlag"]').value || "No"; // Default if empty
-                    const comment = row.querySelector('textarea[name="comment"]').value || "";
-
-                    // Add this product's data to the list
+                const amount = row.querySelector('input[name="amount"]').value;
+                if (amount && parseFloat(amount) > 0) {
                     productEntries.push({
-                        productName: productName,
-                        amount: amountInput.value,
-                        // Only include quantity if it's also entered, otherwise default to 1 or handle as needed
-                        quantity: quantity && parseInt(quantity) > 0 ? quantity : '1',
-                        repurchaseFlag: repurchaseFlag,
-                        comment: comment
+                        productName: row.dataset.productName,
+                        amount,
+                        quantity: row.querySelector('input[name="quantity"]').value || '1',
+                        repurchaseFlag: row.querySelector('select[name="repurchaseFlag"]').value || "No",
+                        comment: row.querySelector('textarea[name="comment"]').value || ""
                     });
-                    // Optional: Add visual feedback to the row
-                    // row.classList.add('has-amount');
-                } else {
-                    // Optional: Remove visual feedback if amount is cleared
-                    // row.classList.remove('has-amount');
                 }
             });
 
-            // Check if any products had an amount entered
             if (productEntries.length === 0) {
                 messageDiv.textContent = "Please enter an amount for at least one product.";
-                return; // Stop submission if no products have amount entered
+                return;
             }
-
-            console.log("Product entries being sent:", productEntries); // Print the filtered product entries
 
             const payload = {
                 action: 'submitOrder',
                 customerName,
-                products: JSON.stringify(productEntries) // Send only the filtered entries
+                products: JSON.stringify(productEntries)
             };
 
-            console.log("Payload being sent:", payload); // Print the payload
-            messageDiv.textContent = "Submitting..."; // Provide feedback
+            messageDiv.textContent = "Submitting...";
 
             try {
-                 const response = await fetch(webAppUrl, {
-                     method: 'POST',
-                     mode: 'no-cors', // Keep no-cors if your GAS is set up for it
-                     headers: {
-                          'Content-Type': 'application/x-www-form-urlencoded',
-                     },
-                     body: new URLSearchParams(payload).toString()
-                 });
+                await fetch(webAppUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(payload).toString()
+                });
 
-                // Assuming success with no-cors
                 messageDiv.textContent = "Order submitted successfully!";
-                form.reset(); // Reset customer name
-                clearTableInputs(); // Clear the inputs in the table, keeping the rows
-
+                form.reset();
+                clearTableInputs();
             } catch (error) {
                 console.error("Error submitting order:", error);
                 messageDiv.textContent = "Error submitting order. Please check console and try again.";
             }
         });
 
-        // Fetch initial product data and populate the table when the page loads
         window.onload = fetchInitialData;
     </script>
 </body>
