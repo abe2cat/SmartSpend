@@ -145,7 +145,12 @@
             <label for="customerName">Customer Name:</label>
             <input type="text" id="customerName" name="customerName" placeholder="Enter customer name...">
         </div>
-
+        
+        <div>
+            <strong>Total Amount: ₹<span id="totalAmount">0</span></strong><br>
+            <strong>Total Quantity: <span id="totalQuantity">0</span></strong>
+        </div>
+        
         <div id="productsContainer">
             <table id="productTable">
                 <thead>
@@ -190,8 +195,8 @@
 
                 tr.innerHTML = `
                     <td data-label="Product Name">${productName}</td>
-                    <td data-label="Amount"><input type="number" name="amount" step="0.01" min="0"></td>
-                    <td data-label="Quantity"><input type="number" name="quantity" step="1" min="0"></td>
+                    <td data-label="Amount"><input type="number" name="amount" step="0.01" min="0"  oninput="updateTotals()"></td>
+                    <td data-label="Quantity"><input type="number" name="quantity" step="1" min="0"  oninput="updateTotals()"></td>
                     <td data-label="Repurchase Flag">
                         <select name="repurchaseFlag">
                             <option value="">Select Option</option>
@@ -202,6 +207,8 @@
                 `;
                 productTableBody.appendChild(tr);
             });
+
+            updateTotals();
         }
 
         async function fetchInitialData() {
@@ -284,6 +291,27 @@
         });
 
         window.onload = fetchInitialData;
+
+        function updateTotals() {
+                let totalAmount = 0;
+                let totalQuantity = 0;
+            
+                const rows = productTableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const amountInput = row.querySelector('input[name="amount"]');
+                    const quantityInput = row.querySelector('input[name="quantity"]');
+            
+                    const amount = parseFloat(amountInput?.value) || 0;
+                    const quantity = parseInt(quantityInput?.value) || 0;
+            
+                    totalAmount += amount;
+                    totalQuantity += quantity;
+                });
+            
+                document.getElementById('totalAmount').textContent = totalAmount.toFixed(2);
+                document.getElementById('totalQuantity').textContent = totalQuantity;
+            }
+
     </script>
 </body>
 </html>
